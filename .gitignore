@@ -1,0 +1,30 @@
+# Claude Code internal
+.claude/
+
+# Mosquitto runtime data
+mosquitto/data/
+mosquitto/log/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Firebase credentials (NEVER commit these)
+**/*firebase-adminsdk*.json
+**/google-services.json
+**/GoogleService-Info.plist
+
+# Gradle build artifacts
+**/build/
+**/.gradle/
+**/.kotlin/

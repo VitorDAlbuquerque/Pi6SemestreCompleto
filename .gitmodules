@@ -1,0 +1,3 @@
+[submodule "LPR"]
+	path = LPR
+	url = https://github.com/VitorDAlbuquerque/lprPi6Real.git

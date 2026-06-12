@@ -452,4 +452,86 @@ class LprServiceTest {
             "CT07: observação deve mencionar 'horário', mas foi: '${logGravado.observacao}'"
         }
     }
+
+    // =========================================================================
+    // CT08 — Caminho infeliz: LPR responde mas não detecta nenhuma placa
+    // Cenário: câmera está online mas o veículo não está no campo de visão
+    //          ou a leitura falhou (status = "no_plate").
+    // Saída esperada: status = "no_plate", portão fechado, nenhum log gravado.
+    // =========================================================================
+
+    @Test
+    fun `should_return_no_plate_when_lpr_responds_but_detects_nothing_ct08`() {
+        // --- STUB: câmera online, porém sem placa detectada ---
+        whenever(lprScanner.scan()).thenReturn(mapOf("plate" to null, "status" to "no_plate"))
+
+        // --- DRIVER ---
+        val resultado = sut.triggerScan()
+
+        // --- Assertivas ---
+        assertEquals("no_plate", resultado.status, "CT08: deve retornar no_plate quando câmera não detecta placa")
+        assertNull(resultado.plate, "CT08: placa deve ser nula")
+
+        // Portão NÃO deve abrir
+        verify(servoService, never()).abrirPortao()
+
+        // Nenhum log deve ser gravado (não há tentativa de acesso)
+        verify(registroAcessoService, never()).create(any())
+    }
+
+    // =========================================================================
+    // CT09 — Caminho infeliz: liberação manual por usuário com status ENTROU
+    // Cenário: porteiro tenta liberar entrada de um usuário que já está dentro
+    //          do condomínio (último registro é ENTRADA AUTORIZADO).
+    // RN03 violada: status já é ENTROU → entrada duplicada bloqueada.
+    // Saída esperada: status = "duplicate_entry", portão fechado,
+    //                 log de "tentativa duplicada via manual" gravado.
+    // =========================================================================
+
+    @Test
+    fun `should_deny_manual_release_when_user_status_is_already_entrou_ct09`() {
+        // --- Dados de Teste ---
+        val userId = "user-002"
+        val placa = "DUP9X99"
+        val usuario = User(id = userId, name = "Maria Oliveira", role = "MORADOR", apartmentId = "apt-501")
+
+        // Simula status ENTROU: último registro da placa é ENTRADA AUTORIZADO
+        val ultimaEntradaAtiva = RegistroAcesso(
+            id = "log-ativo",
+            tipoEvento = "ENTRADA",
+            veiculoPlaca = placa,
+            status = "AUTORIZADO",
+            pessoaNome = usuario.name
+        )
+
+        // --- STUB: porteiro encontrou o usuário ---
+        whenever(userRepo.findById(userId)).thenReturn(usuario)
+
+        // --- STUB: último registro indica que o usuário JÁ ESTÁ DENTRO (RN03 violada) ---
+        whenever(registroAcessoRepo.findLastByPlate(placa)).thenReturn(ultimaEntradaAtiva)
+
+        // --- STUB: salva log de acesso ---
+        whenever(registroAcessoService.create(any())).thenReturn("log-ct09")
+
+        // --- DRIVER: porteiro aciona liberação manual por usuário ---
+        val resultado = sut.liberarEntradaManualPorUsuario(userId, placa)
+
+        // --- Assertivas ---
+        assertEquals("duplicate_entry", resultado.status, "CT09: deve bloquear entrada duplicada via liberação manual")
+        assertEquals(usuario.name, resultado.residentName, "CT09: nome do usuário deve constar no resultado")
+
+        // Portão NÃO deve abrir
+        verify(servoService, never()).abrirPortao()
+
+        // Log de TENTATIVA NEGADA deve ser gravado com observação de duplicidade
+        val captor = argumentCaptor<RegistroAcesso>()
+        verify(registroAcessoService).create(captor.capture())
+        val logGravado = captor.firstValue
+        assertEquals("TENTATIVA", logGravado.tipoEvento, "CT09: deve registrar tentativa")
+        assertEquals("NEGADO", logGravado.status, "CT09: status deve ser NEGADO")
+        assertEquals(usuario.name, logGravado.pessoaNome, "CT09: log deve ter o nome do usuário")
+        assert(logGravado.observacao.contains("duplicada")) {
+            "CT09: observação deve mencionar 'duplicada', mas foi: '${logGravado.observacao}'"
+        }
+    }
 }

@@ -11,6 +11,7 @@ data class Vehicle(
     var type: String = "",
     var apartmentId: String = "",
     var visitorId: String = "",
+    var prestadorId: String = "",
     var notes: String = "",
     var isActive: Boolean = true
 )

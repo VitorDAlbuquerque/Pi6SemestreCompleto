@@ -36,4 +36,14 @@ class RegistroAcessoRepository {
             null
         }
     }
+
+    fun findLastByPlate(plate: String): RegistroAcesso? {
+        val result = db.collection("historico_acessos")
+            .whereEqualTo("veiculoPlaca", plate)
+            .get()
+            .get()
+        return result.documents
+            .mapNotNull { doc -> doc.toObject(RegistroAcesso::class.java)?.apply { this.id = doc.id } }
+            .maxByOrNull { it.dataHora }
+    }
 }

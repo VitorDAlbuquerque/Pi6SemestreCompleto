@@ -7,10 +7,8 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 
-/**
- * Componente responsável pela comunicação HTTP com o servidor LPR (hardware de câmera).
- * Extraído de LprService para permitir injeção e substituição por mock nos testes unitários.
- */
+// Faz a chamada HTTP para a câmera LPR.
+// Está separado do LprService justamente pra poder ser mockado nos testes.
 @Component
 class LprScannerClient {
     private val lprUrl = System.getenv("LPR_SERVER_URL") ?: "http://localhost:8001"

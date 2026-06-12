@@ -11,23 +11,11 @@ import java.time.Clock
 import java.time.LocalDateTime
 import java.time.LocalTime
 
-/**
- * Serviço central de controle de acesso do portão.
- *
- * Regras de negócio implementadas:
- *   RN01 — Placa deve estar cadastrada e ativa no sistema.
- *   RN02 — Prestadores de serviço só podem acessar dentro da janela de horário configurada.
- *   RN03 — O status do usuário/veículo deve ser SAIU (sem entrada ativa) para permitir nova entrada.
- *
- * Casos de uso cobertos:
- *   CT01 — Entrada automática via LPR (placa reconhecida, status SAIU).
- *   CT02 — Liberação manual pelo porteiro quando veículo não está cadastrado mas usuário está.
- *   CT03 — Acesso negado: placa inválida ou horário fora da janela permitida.
- *   CT04 — Entrada duplicada bloqueada (veículo ainda com status ENTROU).
- *   CT05 — Módulo LPR offline; porteiro libera manualmente pelo cadastro do veículo.
- *   CT06 — Prestador no exato limite inicial do horário (inclusivo).
- *   CT07 — Prestador após o limite final do horário (exclusivo).
- */
+// Serviço principal da portaria — decide se o portão abre ou não.
+// Três regras guiam tudo:
+//   RN01: placa tem que estar cadastrada e ativa
+//   RN02: prestadores só entram dentro do horário combinado
+//   RN03: não pode entrar se já tem uma entrada sem saída registrada
 @Service
 class LprService(
     private val vehicleRepository: VehicleRepository,
@@ -40,10 +28,7 @@ class LprService(
     private val clock: Clock = Clock.systemDefaultZone()
 ) {
 
-    // -------------------------------------------------------------------------
-    // Ponto de entrada: leitura automática de placa via câmera (LPR)
-    // -------------------------------------------------------------------------
-
+    // leitura automática via câmera
     fun triggerScan(): LprResult {
         val lprResponse = lprScannerClient.scan()
             ?: return LprResult(
@@ -70,18 +55,11 @@ class LprService(
         return evaluateAccess(plate, manual = false)
     }
 
-    // -------------------------------------------------------------------------
-    // Liberação manual pelo porteiro — CT05: veículo cadastrado, LPR offline
-    // -------------------------------------------------------------------------
-
+    // porteiro libera manualmente quando a câmera tá offline (CT05)
     fun liberarEntradaManual(plate: String): LprResult =
         evaluateAccess(plate, manual = true)
 
-    // -------------------------------------------------------------------------
-    // Liberação manual pelo porteiro — CT02: veículo NÃO cadastrado, usuário sim
-    // O porteiro localiza o morador/visitante pelo cadastro e confirma a entrada.
-    // -------------------------------------------------------------------------
-
+    // porteiro localiza o morador pelo cadastro quando o veículo não está registrado (CT02)
     fun liberarEntradaManualPorUsuario(userId: String, plate: String?): LprResult {
         val now = LocalDateTime.now(clock).toString()
 
@@ -138,10 +116,7 @@ class LprService(
         )
     }
 
-    // -------------------------------------------------------------------------
-    // Núcleo de avaliação de acesso — aplica RN01, RN02 e RN03 em sequência
-    // -------------------------------------------------------------------------
-
+    // aplica RN01 → RN02 → RN03 em sequência e decide se abre ou nega
     private fun evaluateAccess(plate: String, manual: Boolean): LprResult {
         val now = LocalDateTime.now(clock).toString()
 
@@ -175,8 +150,7 @@ class LprService(
                 val currentTime = LocalTime.now(clock)
                 val startTime = LocalTime.parse(prestador.allowedStartTime)
                 val endTime = LocalTime.parse(prestador.allowedEndTime)
-                // CT06: limite inferior é INCLUSIVO (currentTime == startTime → permitido)
-                // CT07: limite superior é EXCLUSIVO (currentTime após endTime → negado)
+                // 08:00 == 08:00 entra (inclusivo), 18:01 > 18:00 nega (exclusivo)
                 if (currentTime.isBefore(startTime) || currentTime.isAfter(endTime)) {
                     registroAcessoService.create(
                         RegistroAcesso(

@@ -1,20 +1,18 @@
 package com.example.demo.service
 
 /*
- * Testes unitários do LprService — caso de uso: Acesso do Veículo pela Portaria
+ * Testes unitários do nosso caso de uso: Acesso do Veículo pela Portaria
+ *   Para o Mock utilizamos repositórios e serviços externos (Firebase, MQTT, HTTP da câmera)
+ *   Para o Stub utilizamos retornos pré-definidos via whenever() para simular cenários
+ *   Para os drives utilizamos cada @Test monta o cenário e dispara o método testado
  *
- * Doubles utilizados:
- *   Mock   - repositórios e serviços externos (Firebase, MQTT, HTTP da câmera)
- *   Stub   - retornos pré-definidos via whenever() para simular cenários
- *   Driver - cada @Test monta o cenário e dispara o método testado
- *
- * CT01 - entrada automática (câmera lê placa cadastrada)           [RN01, RN03]
- * CT02 - liberação manual pelo porteiro (veículo não cadastrado)   [RN03]
- * CT03 - acesso negado, placa desconhecida                         [RN01]
- * CT04 - bloqueio de entrada duplicada (veículo ainda dentro)      [RN03]
- * CT05 - câmera offline, porteiro libera pelo cadastro             [RN01, RN03]
- * CT06 - prestador chega exato no início da janela (08:00)         [RN02]
- * CT07 - prestador chega 1 minuto depois do fim da janela (18:01)  [RN02]
+ * CT01 - entrada automática (câmera lê placa cadastrada)           (RN01, RN03)
+ * CT02 - liberação manual pelo porteiro (veículo não cadastrado)   (RN03)
+ * CT03 - acesso negado, placa desconhecida                         (RN01)
+ * CT04 - bloqueio de entrada duplicada (veículo ainda dentro)      (RN03)
+ * CT05 - câmera offline, porteiro libera pelo cadastro             (RN01, RN03)
+ * CT06 - prestador chega exato no início da janela (08:00)         (RN02)
+ * CT07 - prestador chega 1 minuto depois do fim da janela (18:01)  (RN02)
  */
 
 import com.example.demo.model.Prestador

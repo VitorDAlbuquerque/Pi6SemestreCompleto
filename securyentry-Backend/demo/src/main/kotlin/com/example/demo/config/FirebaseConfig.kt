@@ -11,11 +11,15 @@ class FirebaseConfig {
 
     @Bean
     fun firebaseApp(): FirebaseApp {
-
-        val serviceAccount = this::class.java.getResourceAsStream("/pi66-1514a-firebase-adminsdk-fbsvc-43a2ccfcc7.json")
+        val credentialsStream = credentialsFromEnv()
+            ?: credentialsFromFile()
+            ?: error(
+                "Firebase credentials not found. " +
+                "Set FIREBASE_CREDENTIALS_BASE64 env var or place the service account JSON in resources."
+            )
 
         val options = FirebaseOptions.builder()
-            .setCredentials(GoogleCredentials.fromStream(serviceAccount))
+            .setCredentials(GoogleCredentials.fromStream(credentialsStream))
             .build()
 
         return if (FirebaseApp.getApps().isEmpty()) {
@@ -24,4 +28,15 @@ class FirebaseConfig {
             FirebaseApp.getInstance()
         }
     }
+
+    // Produção / CI-CD: credencial em Base64 na variável de ambiente FIREBASE_CREDENTIALS_BASE64
+    private fun credentialsFromEnv(): java.io.InputStream? {
+        val b64 = System.getenv("FIREBASE_CREDENTIALS_BASE64") ?: return null
+        val bytes = java.util.Base64.getDecoder().decode(b64)
+        return bytes.inputStream()
+    }
+
+    // Desenvolvimento local: arquivo JSON no classpath (gitignored)
+    private fun credentialsFromFile(): java.io.InputStream? =
+        this::class.java.getResourceAsStream("/pi66-1514a-firebase-adminsdk-fbsvc-43a2ccfcc7.json")
 }

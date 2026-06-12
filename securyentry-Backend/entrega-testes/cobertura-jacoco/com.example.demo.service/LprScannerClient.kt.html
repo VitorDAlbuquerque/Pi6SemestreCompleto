@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LprScannerClient.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">demo</a> &gt; <a href="index.source.html" class="el_package">com.example.demo.service</a> &gt; <span class="el_source">LprScannerClient.kt</span></div><h1>LprScannerClient.kt</h1><pre class="source lang-java linenums">package com.example.demo.service
+
+import com.fasterxml.jackson.databind.ObjectMapper
+import org.springframework.stereotype.Component
+import java.net.URI
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
+
+/**
+ * Componente responsÃ¡vel pela comunicaÃ§Ã£o HTTP com o servidor LPR (hardware de cÃ¢mera).
+ * ExtraÃ­do de LprService para permitir injeÃ§Ã£o e substituiÃ§Ã£o por mock nos testes unitÃ¡rios.
+ */
+<span class="nc" id="L14">@Component</span>
+class LprScannerClient {
+<span class="nc bnc" id="L16" title="All 2 branches missed.">    private val lprUrl = System.getenv(&quot;LPR_SERVER_URL&quot;) ?: &quot;http://localhost:8001&quot;</span>
+<span class="nc" id="L17">    private val httpClient: HttpClient = HttpClient.newHttpClient()</span>
+<span class="nc" id="L18">    private val mapper = ObjectMapper()</span>
+
+    @Suppress(&quot;UNCHECKED_CAST&quot;)
+<span class="nc" id="L21">    fun scan(): Map&lt;String, Any?&gt;? = runCatching {</span>
+<span class="nc" id="L22">        val request = HttpRequest.newBuilder()</span>
+<span class="nc" id="L23">            .uri(URI.create(&quot;$lprUrl/lpr/scan&quot;))</span>
+<span class="nc" id="L24">            .header(&quot;Content-Type&quot;, &quot;application/json&quot;)</span>
+<span class="nc" id="L25">            .POST(HttpRequest.BodyPublishers.ofString(&quot;{}&quot;))</span>
+<span class="nc" id="L26">            .build()</span>
+<span class="nc" id="L27">        val response = httpClient.send(request, HttpResponse.BodyHandlers.ofString())</span>
+<span class="nc bnc" id="L28" title="All 2 branches missed.">        if (response.statusCode() != 200) return null</span>
+<span class="nc" id="L29">        mapper.readValue(response.body(), Map::class.java) as Map&lt;String, Any?&gt;</span>
+<span class="nc bnc" id="L30" title="All 2 branches missed.">    }.getOrNull()</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

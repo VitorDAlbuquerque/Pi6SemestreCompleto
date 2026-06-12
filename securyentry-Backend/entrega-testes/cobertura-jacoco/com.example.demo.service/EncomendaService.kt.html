@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>EncomendaService.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">demo</a> &gt; <a href="index.source.html" class="el_package">com.example.demo.service</a> &gt; <span class="el_source">EncomendaService.kt</span></div><h1>EncomendaService.kt</h1><pre class="source lang-java linenums">package com.example.demo.service
+
+
+import com.example.demo.model.Encomenda
+import com.example.demo.repository.ApartmentRepository
+import com.example.demo.repository.EncomendaRepository
+import org.springframework.stereotype.Service
+
+// ServiÃ§o e lÃ³gica de negÃ³cio para encomendas (EncomendaService)
+<span class="nc" id="L10">@Service</span>
+<span class="nc" id="L11">class EncomendaService(</span>
+<span class="nc" id="L12">    private val repository: EncomendaRepository,</span>
+<span class="nc" id="L13">    private val apartmentRepository: ApartmentRepository</span>
+) {
+
+    fun create(encomenda: Encomenda): String {
+<span class="nc" id="L17">        normalize(encomenda)</span>
+<span class="nc" id="L18">        validate(encomenda)</span>
+<span class="nc" id="L19">        return repository.save(encomenda)</span>
+    }
+
+<span class="nc" id="L22">    fun getAll(apartmentId: String? = null): List&lt;Encomenda&gt; {</span>
+<span class="nc bnc" id="L23" title="All 6 branches missed.">        return if (!apartmentId.isNullOrBlank()) {</span>
+<span class="nc" id="L24">            repository.findAllByApartmentId(apartmentId)</span>
+        } else {
+<span class="nc" id="L26">            repository.findAll()</span>
+        }
+    }
+
+    fun getById(id: String) =
+<span class="nc bnc" id="L31" title="All 2 branches missed.">        repository.findById(id) ?: throw NoSuchElementException(&quot;Encomenda nÃ£o encontrada.&quot;)</span>
+
+    fun update(id: String, encomenda: Encomenda) {
+<span class="nc bnc" id="L34" title="All 2 branches missed.">        repository.findById(id) ?: throw NoSuchElementException(&quot;Encomenda nÃ£o encontrada.&quot;)</span>
+<span class="nc" id="L35">        normalize(encomenda)</span>
+<span class="nc" id="L36">        validate(encomenda)</span>
+<span class="nc" id="L37">        repository.update(id, encomenda)</span>
+<span class="nc" id="L38">    }</span>
+
+    fun delete(id: String) {
+<span class="nc bnc" id="L41" title="All 2 branches missed.">        repository.findById(id) ?: throw NoSuchElementException(&quot;Encomenda nÃ£o encontrada.&quot;)</span>
+<span class="nc" id="L42">        repository.delete(id)</span>
+<span class="nc" id="L43">    }</span>
+
+    private fun validate(e: Encomenda) {
+<span class="nc bnc" id="L46" title="All 2 branches missed.">        if (e.description.isBlank()) {</span>
+<span class="nc" id="L47">            throw IllegalArgumentException(&quot;DescriÃ§Ã£o da encomenda Ã© obrigatÃ³ria.&quot;)</span>
+        }
+<span class="nc bnc" id="L49" title="All 2 branches missed.">        if (e.recipientName.isBlank()) {</span>
+<span class="nc" id="L50">            throw IllegalArgumentException(&quot;Destinatario Ã© obrigatÃ³rio.&quot;)</span>
+        }
+<span class="nc bnc" id="L52" title="All 4 branches missed.">        if (e.apartmentId.isNotBlank()) {</span>
+<span class="nc bnc" id="L53" title="All 2 branches missed.">            apartmentRepository.findById(e.apartmentId)</span>
+<span class="nc" id="L54">                ?: throw IllegalArgumentException(&quot;Apartamento informado nÃ£o foi encontrado.&quot;)</span>
+        }
+<span class="nc" id="L56">    }</span>
+
+    private fun normalize(e: Encomenda) {
+<span class="nc" id="L59">        e.description = e.description.trim()</span>
+<span class="nc" id="L60">        e.recipientName = e.recipientName.trim()</span>
+<span class="nc" id="L61">        e.storageLocation = e.storageLocation.trim()</span>
+<span class="nc" id="L62">        e.apartmentId = e.apartmentId.trim()</span>
+<span class="nc" id="L63">        e.notes = e.notes.trim()</span>
+<span class="nc" id="L64">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>VisitorService.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">demo</a> &gt; <a href="index.source.html" class="el_package">com.example.demo.service</a> &gt; <span class="el_source">VisitorService.kt</span></div><h1>VisitorService.kt</h1><pre class="source lang-java linenums">package com.example.demo.service
+
+
+import com.example.demo.model.Visitor
+import com.example.demo.repository.ApartmentRepository
+import com.example.demo.repository.VehicleRepository
+import com.example.demo.repository.VisitorRepository
+import org.springframework.stereotype.Service
+
+// ServiÃ§o e lÃ³gica de negÃ³cio para visitantes (VisitorService)
+<span class="nc" id="L11">@Service</span>
+<span class="nc" id="L12">class VisitorService(</span>
+<span class="nc" id="L13">    private val repository: VisitorRepository,</span>
+<span class="nc" id="L14">    private val apartmentRepository: ApartmentRepository,</span>
+<span class="nc" id="L15">    private val vehicleRepository: VehicleRepository</span>
+) {
+
+    fun create(visitor: Visitor): String {
+<span class="nc" id="L19">        normalizeVisitor(visitor)</span>
+<span class="nc" id="L20">        validateVisitor(visitor)</span>
+<span class="nc" id="L21">        val id = repository.save(visitor)</span>
+<span class="nc" id="L22">        syncVehicle(id, visitor.vehicleId, &quot;&quot;)</span>
+<span class="nc" id="L23">        return id</span>
+    }
+
+<span class="nc" id="L26">    fun getAll(apartmentId: String? = null): List&lt;Visitor&gt; {</span>
+<span class="nc bnc" id="L27" title="All 6 branches missed.">        return if (!apartmentId.isNullOrBlank()) {</span>
+<span class="nc" id="L28">            repository.findAllByApartmentId(apartmentId)</span>
+        } else {
+<span class="nc" id="L30">            repository.findAll()</span>
+        }
+    }
+
+    fun getById(id: String) =
+<span class="nc bnc" id="L35" title="All 2 branches missed.">        repository.findById(id) ?: throw NoSuchElementException(&quot;Visitante nao encontrado.&quot;)</span>
+
+    fun update(id: String, visitor: Visitor) {
+<span class="nc bnc" id="L38" title="All 2 branches missed.">        val existingVisitor = repository.findById(id) ?: throw NoSuchElementException(&quot;Visitante nao encontrado.&quot;)</span>
+<span class="nc" id="L39">        normalizeVisitor(visitor)</span>
+<span class="nc" id="L40">        validateVisitor(visitor)</span>
+<span class="nc" id="L41">        repository.update(id, visitor)</span>
+<span class="nc" id="L42">        syncVehicle(id, visitor.vehicleId, existingVisitor.vehicleId)</span>
+<span class="nc" id="L43">    }</span>
+
+    fun delete(id: String) {
+<span class="nc bnc" id="L46" title="All 2 branches missed.">        repository.findById(id) ?: throw NoSuchElementException(&quot;Visitante nao encontrado.&quot;)</span>
+<span class="nc" id="L47">        repository.delete(id)</span>
+<span class="nc" id="L48">    }</span>
+
+    private fun validateVisitor(visitor: Visitor) {
+<span class="nc bnc" id="L51" title="All 2 branches missed.">        if (visitor.name.isBlank()) {</span>
+<span class="nc" id="L52">            throw IllegalArgumentException(&quot;Nome do visitante e obrigatorio.&quot;)</span>
+        }
+<span class="nc bnc" id="L54" title="All 2 branches missed.">        if (visitor.cpf.isBlank()) {</span>
+<span class="nc" id="L55">            throw IllegalArgumentException(&quot;CPF do visitante e obrigatorio.&quot;)</span>
+        }
+<span class="nc bnc" id="L57" title="All 2 branches missed.">        if (visitor.apartmentId.isBlank()) {</span>
+<span class="nc" id="L58">            throw IllegalArgumentException(&quot;Apartamento do visitante e obrigatorio.&quot;)</span>
+        }
+<span class="nc bnc" id="L60" title="All 2 branches missed.">        apartmentRepository.findById(visitor.apartmentId)</span>
+<span class="nc" id="L61">            ?: throw IllegalArgumentException(&quot;Apartamento informado nao foi encontrado.&quot;)</span>
+
+<span class="nc bnc" id="L63" title="All 4 branches missed.">        if (!visitor.freeAccess &amp;&amp; visitor.visitDate.isBlank()) {</span>
+<span class="nc" id="L64">            throw IllegalArgumentException(&quot;A data da visita e obrigatoria para visitantes sem acesso livre.&quot;)</span>
+        }
+<span class="nc bnc" id="L66" title="All 4 branches missed.">        if (visitor.hasVehicle &amp;&amp; visitor.vehicleId.isBlank()) {</span>
+<span class="nc" id="L67">            throw IllegalArgumentException(&quot;O veiculo do visitante e obrigatorio quando a entrada for com veiculo.&quot;)</span>
+        }
+<span class="nc bnc" id="L69" title="All 4 branches missed.">        if (visitor.vehicleId.isNotBlank()) {</span>
+<span class="nc bnc" id="L70" title="All 2 branches missed.">            val vehicle = vehicleRepository.findById(visitor.vehicleId)</span>
+<span class="nc" id="L71">                ?: throw IllegalArgumentException(&quot;Veiculo informado para o visitante nao foi encontrado.&quot;)</span>
+
+<span class="nc bnc" id="L73" title="All 4 branches missed.">            if (vehicle.apartmentId.isNotBlank()) {</span>
+<span class="nc" id="L74">                throw IllegalArgumentException(&quot;O veiculo informado ja esta vinculado a um apartamento.&quot;)</span>
+            }
+        }
+<span class="nc" id="L77">    }</span>
+
+    private fun syncVehicle(visitorId: String, currentVehicleId: String, previousVehicleId: String) {
+<span class="nc bnc" id="L80" title="All 6 branches missed.">        if (previousVehicleId.isNotBlank() &amp;&amp; previousVehicleId != currentVehicleId) {</span>
+<span class="nc" id="L81">            val previousVehicle = vehicleRepository.findById(previousVehicleId)</span>
+<span class="nc bnc" id="L82" title="All 4 branches missed.">            if (previousVehicle != null &amp;&amp; previousVehicle.visitorId == visitorId) {</span>
+<span class="nc" id="L83">                previousVehicle.visitorId = &quot;&quot;</span>
+<span class="nc" id="L84">                vehicleRepository.update(previousVehicleId, previousVehicle)</span>
+            }
+        }
+
+<span class="nc bnc" id="L88" title="All 4 branches missed.">        if (currentVehicleId.isNotBlank()) {</span>
+<span class="nc bnc" id="L89" title="All 2 branches missed.">            val vehicle = vehicleRepository.findById(currentVehicleId)</span>
+<span class="nc" id="L90">                ?: throw IllegalArgumentException(&quot;Veiculo informado para o visitante nao foi encontrado.&quot;)</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">            if (vehicle.visitorId != visitorId) {</span>
+<span class="nc" id="L92">                vehicle.visitorId = visitorId</span>
+<span class="nc" id="L93">                vehicle.apartmentId = &quot;&quot;</span>
+<span class="nc" id="L94">                vehicleRepository.update(currentVehicleId, vehicle)</span>
+            }
+        }
+<span class="nc" id="L97">    }</span>
+
+    private fun normalizeVisitor(visitor: Visitor) {
+<span class="nc" id="L100">        visitor.name = visitor.name.trim()</span>
+<span class="nc" id="L101">        visitor.cpf = visitor.cpf.trim()</span>
+<span class="nc" id="L102">        visitor.phone = visitor.phone.trim()</span>
+<span class="nc" id="L103">        visitor.apartmentId = visitor.apartmentId.trim()</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">        visitor.visitDate = if (visitor.freeAccess) &quot;&quot; else visitor.visitDate.trim()</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">        visitor.vehicleId = if (visitor.hasVehicle) visitor.vehicleId.trim() else &quot;&quot;</span>
+<span class="nc" id="L106">        visitor.authorizedBy = visitor.authorizedBy.trim()</span>
+<span class="nc" id="L107">        visitor.notes = visitor.notes.trim()</span>
+<span class="nc" id="L108">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

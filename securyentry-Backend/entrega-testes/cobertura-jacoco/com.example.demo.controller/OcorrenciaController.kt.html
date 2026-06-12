@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OcorrenciaController.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">demo</a> &gt; <a href="index.source.html" class="el_package">com.example.demo.controller</a> &gt; <span class="el_source">OcorrenciaController.kt</span></div><h1>OcorrenciaController.kt</h1><pre class="source lang-java linenums">package com.example.demo.controller
+
+import com.example.demo.model.Ocorrencia
+import com.example.demo.service.OcorrenciaService
+import org.springframework.web.bind.annotation.*
+
+<span class="nc" id="L7">@RestController</span>
+@RequestMapping(&quot;/ocorrencias&quot;)
+<span class="nc" id="L9">class OcorrenciaController(private val service: OcorrenciaService) {</span>
+
+    @PostMapping
+<span class="nc" id="L12">    fun create(@RequestBody ocorrencia: Ocorrencia) = service.create(ocorrencia)</span>
+
+    @GetMapping
+<span class="nc" id="L15">    fun getAll(@RequestParam(required = false) apartmentId: String?) = service.getAll(apartmentId)</span>
+
+    @GetMapping(&quot;/{id}&quot;)
+<span class="nc" id="L18">    fun getById(@PathVariable id: String) = service.getById(id)</span>
+
+    @PutMapping(&quot;/{id}&quot;)
+    fun update(@PathVariable id: String, @RequestBody ocorrencia: Ocorrencia) {
+<span class="nc" id="L22">        service.update(id, ocorrencia)</span>
+<span class="nc" id="L23">    }</span>
+
+    @DeleteMapping(&quot;/{id}&quot;)
+    fun delete(@PathVariable id: String) {
+<span class="nc" id="L27">        service.delete(id)</span>
+<span class="nc" id="L28">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

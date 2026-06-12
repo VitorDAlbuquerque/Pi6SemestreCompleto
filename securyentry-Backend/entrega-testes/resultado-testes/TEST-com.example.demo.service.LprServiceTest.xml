@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.demo.service.LprServiceTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-06-12T01:04:20.961Z" hostname="DESKTOP-79Q2T1H" time="2.514">
+  <properties/>
+  <testcase name="should_allow_service_provider_entry_exactly_at_start_of_allowed_window_ct06()" classname="com.example.demo.service.LprServiceTest" time="0.968"/>
+  <testcase name="should_report_lpr_offline_then_allow_manual_release_by_doorman_ct05()" classname="com.example.demo.service.LprServiceTest" time="0.01"/>
+  <testcase name="should_deny_duplicate_entry_when_vehicle_already_has_active_entrada_ct04()" classname="com.example.demo.service.LprServiceTest" time="0.005"/>
+  <testcase name="should_allow_manual_entry_by_doorman_when_vehicle_not_registered_but_user_exists_ct02()" classname="com.example.demo.service.LprServiceTest" time="0.006"/>
+  <testcase name="should_allow_automatic_entry_when_plate_is_registered_ct01()" classname="com.example.demo.service.LprServiceTest" time="0.004"/>
+  <testcase name="should_deny_service_provider_entry_one_minute_after_end_of_allowed_window_ct07()" classname="com.example.demo.service.LprServiceTest" time="0.006"/>
+  <testcase name="should_deny_access_and_log_when_plate_is_not_registered_ct03()" classname="com.example.demo.service.LprServiceTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OcorrenciaService.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">demo</a> &gt; <a href="index.source.html" class="el_package">com.example.demo.service</a> &gt; <span class="el_source">OcorrenciaService.kt</span></div><h1>OcorrenciaService.kt</h1><pre class="source lang-java linenums">package com.example.demo.service
+
+import com.example.demo.model.Ocorrencia
+import com.example.demo.repository.ApartmentRepository
+import com.example.demo.repository.OcorrenciaRepository
+import org.springframework.stereotype.Service
+
+<span class="nc" id="L8">@Service</span>
+<span class="nc" id="L9">class OcorrenciaService(</span>
+<span class="nc" id="L10">    private val repository: OcorrenciaRepository,</span>
+<span class="nc" id="L11">    private val apartmentRepository: ApartmentRepository</span>
+) {
+
+    fun create(ocorrencia: Ocorrencia): String {
+<span class="nc" id="L15">        normalize(ocorrencia)</span>
+<span class="nc" id="L16">        validate(ocorrencia)</span>
+<span class="nc" id="L17">        return repository.save(ocorrencia)</span>
+    }
+
+<span class="nc" id="L20">    fun getAll(apartmentId: String? = null): List&lt;Ocorrencia&gt; {</span>
+<span class="nc bnc" id="L21" title="All 6 branches missed.">        return if (!apartmentId.isNullOrBlank()) {</span>
+<span class="nc" id="L22">            repository.findAllByApartmentId(apartmentId)</span>
+        } else {
+<span class="nc" id="L24">            repository.findAll()</span>
+        }
+    }
+
+    fun getById(id: String) =
+<span class="nc bnc" id="L29" title="All 2 branches missed.">        repository.findById(id) ?: throw NoSuchElementException(&quot;Ocorrencia nao encontrada.&quot;)</span>
+
+    fun update(id: String, ocorrencia: Ocorrencia) {
+<span class="nc bnc" id="L32" title="All 2 branches missed.">        repository.findById(id) ?: throw NoSuchElementException(&quot;Ocorrencia nao encontrada.&quot;)</span>
+<span class="nc" id="L33">        normalize(ocorrencia)</span>
+<span class="nc" id="L34">        validate(ocorrencia)</span>
+<span class="nc" id="L35">        repository.update(id, ocorrencia)</span>
+<span class="nc" id="L36">    }</span>
+
+    fun delete(id: String) {
+<span class="nc bnc" id="L39" title="All 2 branches missed.">        repository.findById(id) ?: throw NoSuchElementException(&quot;Ocorrencia nao encontrada.&quot;)</span>
+<span class="nc" id="L40">        repository.delete(id)</span>
+<span class="nc" id="L41">    }</span>
+
+    private fun validate(o: Ocorrencia) {
+<span class="nc bnc" id="L44" title="All 2 branches missed.">        if (o.title.isBlank()) {</span>
+<span class="nc" id="L45">            throw IllegalArgumentException(&quot;Titulo da ocorrencia e obrigatorio.&quot;)</span>
+        }
+<span class="nc bnc" id="L47" title="All 2 branches missed.">        if (o.description.isBlank()) {</span>
+<span class="nc" id="L48">            throw IllegalArgumentException(&quot;Descricao da ocorrencia e obrigatoria.&quot;)</span>
+        }
+<span class="nc bnc" id="L50" title="All 2 branches missed.">        if (o.category.isBlank()) {</span>
+<span class="nc" id="L51">            throw IllegalArgumentException(&quot;Categoria da ocorrencia e obrigatoria.&quot;)</span>
+        }
+<span class="nc bnc" id="L53" title="All 2 branches missed.">        if (o.reportedBy.isBlank()) {</span>
+<span class="nc" id="L54">            throw IllegalArgumentException(&quot;Responsavel pelo registro e obrigatorio.&quot;)</span>
+        }
+<span class="nc bnc" id="L56" title="All 2 branches missed.">        if (o.status.isBlank()) {</span>
+<span class="nc" id="L57">            throw IllegalArgumentException(&quot;Status da ocorrencia e obrigatorio.&quot;)</span>
+        }
+<span class="nc bnc" id="L59" title="All 4 branches missed.">        if (o.apartmentId.isNotBlank()) {</span>
+<span class="nc bnc" id="L60" title="All 2 branches missed.">            apartmentRepository.findById(o.apartmentId)</span>
+<span class="nc" id="L61">                ?: throw IllegalArgumentException(&quot;Apartamento informado nao foi encontrado.&quot;)</span>
+        }
+<span class="nc" id="L63">    }</span>
+
+    private fun normalize(o: Ocorrencia) {
+<span class="nc" id="L66">        o.title = o.title.trim()</span>
+<span class="nc" id="L67">        o.description = o.description.trim()</span>
+<span class="nc" id="L68">        o.category = o.category.trim().uppercase()</span>
+<span class="nc bnc" id="L69" title="All 2 branches missed.">        o.severity = o.severity.trim().uppercase().ifBlank { &quot;MEDIA&quot; }</span>
+<span class="nc bnc" id="L70" title="All 2 branches missed.">        o.status = o.status.trim().uppercase().ifBlank { &quot;ABERTA&quot; }</span>
+<span class="nc" id="L71">        o.reportedBy = o.reportedBy.trim()</span>
+<span class="nc" id="L72">        o.apartmentId = o.apartmentId.trim()</span>
+<span class="nc" id="L73">        o.createdAt = o.createdAt.trim()</span>
+<span class="nc" id="L74">        o.resolvedAt = o.resolvedAt.trim()</span>
+<span class="nc" id="L75">        o.notes = o.notes.trim()</span>
+<span class="nc" id="L76">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

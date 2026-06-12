@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ApartmentService.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">demo</a> &gt; <a href="index.source.html" class="el_package">com.example.demo.service</a> &gt; <span class="el_source">ApartmentService.kt</span></div><h1>ApartmentService.kt</h1><pre class="source lang-java linenums">package com.example.demo.service
+
+
+import com.example.demo.model.Apartment
+import com.example.demo.repository.ApartmentRepository
+import com.example.demo.repository.UserRepository
+import com.example.demo.repository.VehicleRepository
+import org.springframework.stereotype.Service
+
+// ServiÃ§o e lÃ³gica de negÃ³cio para apartamentos (ApartmentService)
+<span class="nc" id="L11">@Service</span>
+<span class="nc" id="L12">class ApartmentService(</span>
+<span class="nc" id="L13">    private val repository: ApartmentRepository,</span>
+<span class="nc" id="L14">    private val userRepository: UserRepository,</span>
+<span class="nc" id="L15">    private val vehicleRepository: VehicleRepository</span>
+) {
+
+    fun create(apartment: Apartment): String {
+<span class="nc" id="L19">        normalizeApartment(apartment)</span>
+<span class="nc" id="L20">        validateApartment(apartment)</span>
+
+<span class="nc bnc" id="L22" title="All 2 branches missed.">        if (repository.findByNumberAndBlock(apartment.number, apartment.block) != null) {</span>
+<span class="nc" id="L23">            throw IllegalArgumentException(&quot;JÃ¡ existe um apartamento cadastrado com este nÃºmero e bloco.&quot;)</span>
+        }
+
+<span class="nc" id="L26">        validateResidents(apartment.residentIds)</span>
+<span class="nc bnc" id="L27" title="All 2 branches missed.">        apartment.isOccupied = apartment.residentIds.isNotEmpty()</span>
+<span class="nc" id="L28">        val id = repository.save(apartment)</span>
+<span class="nc" id="L29">        syncVehicles(id, apartment.vehicleIds, emptyList())</span>
+<span class="nc" id="L30">        return id</span>
+    }
+
+<span class="nc" id="L33">    fun getAll() = repository.findAll()</span>
+
+    fun getById(id: String) =
+<span class="nc bnc" id="L36" title="All 2 branches missed.">        repository.findById(id) ?: throw NoSuchElementException(&quot;Apartamento nÃ£o encontrado.&quot;)</span>
+
+    fun update(id: String, apartment: Apartment) {
+<span class="nc bnc" id="L39" title="All 2 branches missed.">        val existingApartment = repository.findById(id)</span>
+<span class="nc" id="L40">            ?: throw NoSuchElementException(&quot;Apartamento nÃ£o encontrado.&quot;)</span>
+
+<span class="nc" id="L42">        normalizeApartment(apartment)</span>
+<span class="nc" id="L43">        validateApartment(apartment)</span>
+
+<span class="nc bnc" id="L45" title="All 4 branches missed.">        val sameUnit = apartment.number == existingApartment.number &amp;&amp; apartment.block == existingApartment.block</span>
+<span class="nc bnc" id="L46" title="All 2 branches missed.">        if (!sameUnit) {</span>
+<span class="nc" id="L47">            val apartmentsWithSameUnit = repository.findAllByNumberAndBlock(apartment.number, apartment.block)</span>
+<span class="nc bnc" id="L48" title="All 2 branches missed.">            val unitAlreadyExists = apartmentsWithSameUnit.any { it.id != id }</span>
+<span class="nc bnc" id="L49" title="All 2 branches missed.">            if (unitAlreadyExists) {</span>
+<span class="nc" id="L50">                throw IllegalArgumentException(&quot;JÃ¡ existe um apartamento cadastrado com este nÃºmero e bloco.&quot;)</span>
+            }
+        }
+
+<span class="nc" id="L54">        validateResidents(apartment.residentIds)</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">        apartment.isOccupied = apartment.residentIds.isNotEmpty()</span>
+<span class="nc" id="L56">        repository.update(id, apartment)</span>
+<span class="nc" id="L57">        syncVehicles(id, apartment.vehicleIds, existingApartment.vehicleIds)</span>
+<span class="nc" id="L58">    }</span>
+
+    fun delete(id: String) {
+<span class="nc bnc" id="L61" title="All 2 branches missed.">        repository.findById(id) ?: throw NoSuchElementException(&quot;Apartamento nÃ£o encontrado.&quot;)</span>
+<span class="nc" id="L62">        repository.delete(id)</span>
+<span class="nc" id="L63">    }</span>
+
+    private fun validateApartment(apartment: Apartment) {
+<span class="nc bnc" id="L66" title="All 2 branches missed.">        if (apartment.number.isBlank()) {</span>
+<span class="nc" id="L67">            throw IllegalArgumentException(&quot;NÃºmero do apartamento e obrigatÃ³rio.&quot;)</span>
+        }
+<span class="nc bnc" id="L69" title="All 2 branches missed.">        if (apartment.block.isBlank()) {</span>
+<span class="nc" id="L70">            throw IllegalArgumentException(&quot;Bloco e obrigatÃ³rio.&quot;)</span>
+        }
+<span class="nc bnc" id="L72" title="All 2 branches missed.">        if (apartment.maxResidents &lt; 0) {</span>
+<span class="nc" id="L73">            throw IllegalArgumentException(&quot;A capacidade mÃ¡xima nÃ£o pode ser negativa.&quot;)</span>
+        }
+<span class="nc bnc" id="L75" title="All 4 branches missed.">        if (apartment.maxResidents &gt; 0 &amp;&amp; apartment.residentIds.size &gt; apartment.maxResidents) {</span>
+<span class="nc" id="L76">            throw IllegalArgumentException(&quot;A quantidade de moradores excede a capacidade mÃ¡xima do apartamento.&quot;)</span>
+        }
+<span class="nc bnc" id="L78" title="All 2 branches missed.">        if (apartment.vehicleIds.size &gt; apartment.parkingSpotCount) {</span>
+<span class="nc" id="L79">            throw IllegalArgumentException(&quot;A quantidade de veiculos nÃ£o pode ser maior que o total de vagas.&quot;)</span>
+        }
+<span class="nc bnc" id="L81" title="All 2 branches missed.">        if (apartment.parkingSpotCount &lt; 0) {</span>
+<span class="nc" id="L82">            throw IllegalArgumentException(&quot;A quantidade de vagas nÃ£o pode ser negativa.&quot;)</span>
+        }
+<span class="nc bnc" id="L84" title="All 2 branches missed.">        if (apartment.availableParkingSpots &lt; 0) {</span>
+<span class="nc" id="L85">            throw IllegalArgumentException(&quot;A quantidade de vagas disponÃ­veis nÃ£o pode ser negativa.&quot;)</span>
+        }
+<span class="nc bnc" id="L87" title="All 2 branches missed.">        if (apartment.availableParkingSpots &gt; apartment.parkingSpotCount) {</span>
+<span class="nc" id="L88">            throw IllegalArgumentException(&quot;As vagas disponÃ­veis nÃ£o podem ser maiores que o total de vagas.&quot;)</span>
+        }
+<span class="nc" id="L90">    }</span>
+
+    private fun validateResidents(residentIds: List&lt;String&gt;) {
+<span class="nc bnc" id="L93" title="All 2 branches missed.">        val ids = residentIds.map { it.trim() }.filter { it.isNotBlank() }</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">        if (ids.size != ids.distinct().size) {</span>
+<span class="nc" id="L95">            throw IllegalArgumentException(&quot;NÃ£o Ã© permitido repetir moradores no apartamento.&quot;)</span>
+        }
+
+<span class="nc" id="L98">        ids.forEach { residentId -&gt;</span>
+<span class="nc bnc" id="L99" title="All 2 branches missed.">            userRepository.findById(residentId)</span>
+<span class="nc" id="L100">                ?: throw IllegalArgumentException(&quot;Morador informado nÃ£o foi encontrado: $residentId&quot;)</span>
+<span class="nc" id="L101">        }</span>
+<span class="nc" id="L102">    }</span>
+
+<span class="nc" id="L104">    private fun validateVehicles(vehicleIds: List&lt;String&gt;, apartmentId: String? = null) {</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">        val ids = vehicleIds.map { it.trim() }.filter { it.isNotBlank() }</span>
+<span class="nc bnc" id="L106" title="All 2 branches missed.">        if (ids.size != ids.distinct().size) {</span>
+<span class="nc" id="L107">            throw IllegalArgumentException(&quot;NÃ£o Ã© permitido repetir veiculos no apartamento.&quot;)</span>
+        }
+
+<span class="nc" id="L110">        ids.forEach { vehicleId -&gt;</span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">            val vehicle = vehicleRepository.findById(vehicleId)</span>
+<span class="nc" id="L112">                ?: throw IllegalArgumentException(&quot;Veiculo informado nÃ£o foi encontrado: $vehicleId&quot;)</span>
+
+<span class="nc bnc" id="L114" title="All 4 branches missed.">            if (vehicle.visitorId.isNotBlank()) {</span>
+<span class="nc" id="L115">                throw IllegalArgumentException(&quot;O veiculo $vehicleId estÃ¡ vinculado a um visitante e nÃ£o pode ser associado ao apartamento.&quot;)</span>
+            }
+
+<span class="nc bnc" id="L118" title="All 6 branches missed.">            if (vehicle.apartmentId.isNotBlank() &amp;&amp; vehicle.apartmentId != apartmentId) {</span>
+<span class="nc" id="L119">                throw IllegalArgumentException(&quot;O veiculo $vehicleId jÃ¡ esta vinculado a outro apartamento.&quot;)</span>
+            }
+<span class="nc" id="L121">        }</span>
+<span class="nc" id="L122">    }</span>
+
+    private fun syncVehicles(apartmentId: String, currentVehicleIds: List&lt;String&gt;, previousVehicleIds: List&lt;String&gt;) {
+<span class="nc" id="L125">        val currentIds = currentVehicleIds.distinct()</span>
+<span class="nc" id="L126">        val previousIds = previousVehicleIds.distinct()</span>
+
+<span class="nc bnc" id="L128" title="All 2 branches missed.">        previousIds.filter { it !in currentIds }.forEach { vehicleId -&gt;</span>
+<span class="nc" id="L129">            val vehicle = vehicleRepository.findById(vehicleId)</span>
+<span class="nc bnc" id="L130" title="All 4 branches missed.">            if (vehicle != null &amp;&amp; vehicle.apartmentId == apartmentId) {</span>
+<span class="nc" id="L131">                vehicle.apartmentId = &quot;&quot;</span>
+<span class="nc" id="L132">                vehicleRepository.update(vehicleId, vehicle)</span>
+            }
+<span class="nc" id="L134">        }</span>
+
+<span class="nc" id="L136">        currentIds.forEach { vehicleId -&gt;</span>
+<span class="nc bnc" id="L137" title="All 2 branches missed.">            val vehicle = vehicleRepository.findById(vehicleId)</span>
+<span class="nc" id="L138">                ?: throw IllegalArgumentException(&quot;Veiculo informado nÃ£o foi encontrado: $vehicleId&quot;)</span>
+<span class="nc bnc" id="L139" title="All 2 branches missed.">            if (vehicle.apartmentId != apartmentId) {</span>
+<span class="nc" id="L140">                vehicle.apartmentId = apartmentId</span>
+<span class="nc" id="L141">                vehicle.visitorId = &quot;&quot;</span>
+<span class="nc" id="L142">                vehicleRepository.update(vehicleId, vehicle)</span>
+            }
+<span class="nc" id="L144">        }</span>
+<span class="nc" id="L145">    }</span>
+
+    private fun normalizeApartment(apartment: Apartment) {
+<span class="nc" id="L148">        apartment.number = apartment.number.trim()</span>
+<span class="nc" id="L149">        apartment.block = apartment.block.trim().uppercase()</span>
+<span class="nc" id="L150">        apartment.floor = apartment.floor.trim()</span>
+<span class="nc" id="L151">        apartment.notes = apartment.notes.trim()</span>
+<span class="nc bnc" id="L152" title="All 2 branches missed.">        apartment.residentIds = apartment.residentIds.map { it.trim() }.filter { it.isNotBlank() }</span>
+<span class="nc bnc" id="L153" title="All 2 branches missed.">        apartment.vehicleIds = apartment.vehicleIds.map { it.trim() }.filter { it.isNotBlank() }</span>
+<span class="nc" id="L154">        validateVehicles(apartment.vehicleIds, apartment.id)</span>
+<span class="nc" id="L155">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

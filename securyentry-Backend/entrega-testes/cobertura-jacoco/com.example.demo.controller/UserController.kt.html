@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserController.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">demo</a> &gt; <a href="index.source.html" class="el_package">com.example.demo.controller</a> &gt; <span class="el_source">UserController.kt</span></div><h1>UserController.kt</h1><pre class="source lang-java linenums">package com.example.demo.controller
+
+
+import com.example.demo.model.User
+import com.example.demo.service.UserService
+import org.springframework.web.bind.annotation.*
+
+
+<span class="nc" id="L9">@RestController</span>
+@RequestMapping(&quot;/users&quot;)
+<span class="nc" id="L11">class UserController(private val service: UserService) {</span>
+
+    @PostMapping
+<span class="nc" id="L14">    fun create(@RequestBody user: User): User = service.create(user)</span>
+
+    @GetMapping
+<span class="nc" id="L17">    fun getAll() = service.getAll()</span>
+
+    @GetMapping(&quot;/{id}&quot;)
+<span class="nc" id="L20">    fun getById(@PathVariable id: String) = service.getById(id)</span>
+
+    @PutMapping(&quot;/{id}&quot;)
+    fun update(@PathVariable id: String, @RequestBody user: User) {
+<span class="nc" id="L24">        service.update(id, user)</span>
+<span class="nc" id="L25">    }</span>
+
+    @DeleteMapping(&quot;/{id}&quot;)
+    fun delete(@PathVariable id: String) {
+<span class="nc" id="L29">        service.delete(id)</span>
+<span class="nc" id="L30">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>VehicleRepository.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">demo</a> &gt; <a href="index.source.html" class="el_package">com.example.demo.repository</a> &gt; <span class="el_source">VehicleRepository.kt</span></div><h1>VehicleRepository.kt</h1><pre class="source lang-java linenums">package com.example.demo.repository
+
+import com.example.demo.model.Vehicle
+import com.google.cloud.firestore.Firestore
+import com.google.firebase.cloud.FirestoreClient
+import org.springframework.stereotype.Repository
+
+<span class="nc" id="L8">@Repository</span>
+class VehicleRepository {
+
+<span class="nc" id="L11">    private val db: Firestore by lazy {</span>
+<span class="nc" id="L12">        FirestoreClient.getFirestore()</span>
+    }
+
+    fun save(vehicle: Vehicle): String {
+<span class="nc" id="L16">        val docRef = db.collection(&quot;vehicles&quot;).document()</span>
+<span class="nc" id="L17">        vehicle.id = docRef.id</span>
+<span class="nc" id="L18">        docRef.set(vehicle)</span>
+<span class="nc" id="L19">        return vehicle.id!!</span>
+    }
+
+    fun findAll(): List&lt;Vehicle&gt; {
+<span class="nc" id="L23">        val result = db.collection(&quot;vehicles&quot;).get().get()</span>
+<span class="nc" id="L24">        return result.mapNotNull { doc -&gt;</span>
+<span class="nc bnc" id="L25" title="All 2 branches missed.">            doc.toObject(Vehicle::class.java)?.apply { id = doc.id }</span>
+        }
+    }
+
+    fun findAllByApartmentId(apartmentId: String): List&lt;Vehicle&gt; {
+<span class="nc" id="L30">        val result = db.collection(&quot;vehicles&quot;)</span>
+<span class="nc" id="L31">            .whereEqualTo(&quot;apartmentId&quot;, apartmentId)</span>
+<span class="nc" id="L32">            .get()</span>
+<span class="nc" id="L33">            .get()</span>
+
+<span class="nc" id="L35">        return result.documents.mapNotNull { doc -&gt;</span>
+<span class="nc bnc" id="L36" title="All 2 branches missed.">            doc.toObject(Vehicle::class.java)?.apply { id = doc.id }</span>
+        }
+    }
+
+    fun findById(id: String): Vehicle? {
+<span class="nc" id="L41">        val doc = db.collection(&quot;vehicles&quot;).document(id).get().get()</span>
+<span class="nc bnc" id="L42" title="All 2 branches missed.">        return if (doc.exists()) {</span>
+<span class="nc bnc" id="L43" title="All 2 branches missed.">            doc.toObject(Vehicle::class.java)?.apply { this.id = doc.id }</span>
+        } else {
+<span class="nc" id="L45">            null</span>
+        }
+    }
+
+    fun findByPlate(plate: String): Vehicle? {
+<span class="nc" id="L50">        return findAllByPlate(plate).firstOrNull()</span>
+    }
+
+    fun findAllByPlate(plate: String): List&lt;Vehicle&gt; {
+<span class="nc" id="L54">        val result = db.collection(&quot;vehicles&quot;)</span>
+<span class="nc" id="L55">            .whereEqualTo(&quot;plate&quot;, plate)</span>
+<span class="nc" id="L56">            .get()</span>
+<span class="nc" id="L57">            .get()</span>
+
+<span class="nc" id="L59">        return result.documents.mapNotNull { doc -&gt;</span>
+<span class="nc bnc" id="L60" title="All 2 branches missed.">            doc.toObject(Vehicle::class.java)?.apply { id = doc.id }</span>
+        }
+    }
+
+    fun update(id: String, vehicle: Vehicle) {
+<span class="nc" id="L65">        vehicle.id = id</span>
+<span class="nc" id="L66">        db.collection(&quot;vehicles&quot;).document(id).set(vehicle)</span>
+<span class="nc" id="L67">    }</span>
+
+    fun delete(id: String) {
+<span class="nc" id="L70">        db.collection(&quot;vehicles&quot;).document(id).delete()</span>
+<span class="nc" id="L71">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

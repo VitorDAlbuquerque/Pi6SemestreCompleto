@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ServoService.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">demo</a> &gt; <a href="index.source.html" class="el_package">com.example.demo.service</a> &gt; <span class="el_source">ServoService.kt</span></div><h1>ServoService.kt</h1><pre class="source lang-java linenums">package com.example.demo.service
+
+import org.eclipse.paho.client.mqttv3.MqttClient
+import org.eclipse.paho.client.mqttv3.MqttMessage
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.stereotype.Service
+
+<span class="nc" id="L8">@Service</span>
+<span class="nc" id="L9">class ServoService(</span>
+<span class="nc" id="L10">    @Value(&quot;\${mqtt.broker-url:tcp://localhost:1883}&quot;) private val brokerUrl: String,</span>
+<span class="nc" id="L11">    @Value(&quot;\${mqtt.topic.portao:securyentry/portao/cmd}&quot;) private val topic: String,</span>
+) {
+    fun abrirPortao() {
+<span class="nc" id="L14">        val client = MqttClient(brokerUrl, MqttClient.generateClientId())</span>
+<span class="nc" id="L15">        try {</span>
+<span class="nc" id="L16">            client.connect()</span>
+<span class="nc" id="L17">            val message = MqttMessage(&quot;OPEN&quot;.toByteArray())</span>
+<span class="nc" id="L18">            message.qos = 1</span>
+<span class="nc" id="L19">            client.publish(topic, message)</span>
+        } finally {
+<span class="nc bnc" id="L21" title="All 2 branches missed.">            if (client.isConnected) client.disconnect()</span>
+<span class="nc" id="L22">            client.close()</span>
+        }
+<span class="nc" id="L24">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

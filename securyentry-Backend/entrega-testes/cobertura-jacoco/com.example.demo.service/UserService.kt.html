@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserService.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">demo</a> &gt; <a href="index.source.html" class="el_package">com.example.demo.service</a> &gt; <span class="el_source">UserService.kt</span></div><h1>UserService.kt</h1><pre class="source lang-java linenums">package com.example.demo.service
+
+
+import com.example.demo.dto.LoginRequest
+import com.example.demo.dto.LoginResponse
+import com.example.demo.model.User
+import com.example.demo.repository.UserRepository
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
+import org.springframework.stereotype.Service
+
+// ServiÃ§o de usuÃ¡rios e autenticaÃ§Ã£o (UserService)
+<span class="nc" id="L12">@Service</span>
+<span class="nc" id="L13">class UserService(private val repository: UserRepository) {</span>
+
+<span class="nc" id="L15">    private val passwordEncoder = BCryptPasswordEncoder()</span>
+
+    fun create(user: User): User {
+        // Tracing operacional de seguranca para criacao de conta
+<span class="nc" id="L19">        println(&quot;BACKEND_CREATE -&gt; Role recebida do Frontend: '${user.role}'&quot;)</span>
+
+<span class="nc" id="L21">        val email = user.email.trim().lowercase()</span>
+<span class="nc" id="L22">        validateUser(user)</span>
+
+<span class="nc bnc" id="L24" title="All 4 branches missed.">        if (repository.findAllByEmail(email).isNotEmpty()) {</span>
+<span class="nc" id="L25">            throw IllegalArgumentException(&quot;JÃ¡ existe uma conta com esse e-mail.&quot;)</span>
+        }
+
+<span class="nc" id="L28">        user.email = email</span>
+<span class="nc" id="L29">        user.password = hash(user.password)</span>
+
+        // Garantia de seguranÃ§a (SanitizaÃ§Ã£o)
+<span class="nc bnc" id="L32" title="All 2 branches missed.">        user.role = if (user.role.uppercase() == &quot;ADMIN&quot;) &quot;ADMIN&quot; else &quot;MORADOR&quot;</span>
+
+<span class="nc" id="L34">        println(&quot;BACKEND_CREATE -&gt; Role que serÃ¡ enviada ao Firebase: '${user.role}'&quot;)</span>
+
+<span class="nc" id="L36">        val generatedId = repository.save(user)</span>
+<span class="nc" id="L37">        user.id = generatedId</span>
+<span class="nc" id="L38">        return user</span>
+    }
+
+<span class="nc" id="L41">    fun getAll() = repository.findAll()</span>
+
+    fun getById(id: String) =
+<span class="nc bnc" id="L44" title="All 2 branches missed.">        repository.findById(id) ?: throw NoSuchElementException(&quot;UsuÃ¡rio nÃ£o encontrado.&quot;)</span>
+
+    fun update(id: String, user: User) {
+<span class="nc bnc" id="L47" title="All 2 branches missed.">        val existingUser = repository.findById(id) ?: throw NoSuchElementException(&quot;UsuÃ¡rio nÃ£o encontrado.&quot;)</span>
+<span class="nc" id="L48">        val email = user.email.trim().lowercase()</span>
+<span class="nc" id="L49">        val currentEmail = existingUser.email.trim().lowercase()</span>
+<span class="nc" id="L50">        validateUser(user, isUpdate = true)</span>
+
+<span class="nc" id="L52">        user.email = email</span>
+<span class="nc bnc" id="L53" title="All 2 branches missed.">        user.password = if (user.password.isBlank()) {</span>
+<span class="nc" id="L54">            existingUser.password</span>
+        } else {
+<span class="nc" id="L56">            hash(user.password)</span>
+        }
+
+<span class="nc bnc" id="L59" title="All 2 branches missed.">        if (email == currentEmail) {</span>
+<span class="nc" id="L60">            repository.update(id, user)</span>
+<span class="nc" id="L61">            return</span>
+        }
+
+<span class="nc" id="L64">        val usersWithSameEmail = repository.findAllByEmail(email)</span>
+<span class="nc bnc" id="L65" title="All 2 branches missed.">        val emailBelongsToAnotherUser = usersWithSameEmail.any { it.id != id }</span>
+<span class="nc bnc" id="L66" title="All 2 branches missed.">        if (emailBelongsToAnotherUser) {</span>
+<span class="nc" id="L67">            throw IllegalArgumentException(&quot;JÃ¡ existe uma conta com esse e-mail.&quot;)</span>
+        }
+
+<span class="nc" id="L70">        repository.update(id, user)</span>
+<span class="nc" id="L71">    }</span>
+
+<span class="nc" id="L73">    fun delete(id: String) = repository.delete(id)</span>
+
+    fun login(request: LoginRequest): LoginResponse {
+<span class="nc" id="L76">        val email = request.email.trim().lowercase()</span>
+<span class="nc" id="L77">        val password = request.password.trim()</span>
+
+<span class="nc bnc" id="L79" title="All 4 branches missed.">        if (email.isBlank() || password.isBlank()) {</span>
+<span class="nc" id="L80">            throw IllegalArgumentException(&quot;E-mail e senha sÃ£o obrigatÃ³rios.&quot;)</span>
+        }
+
+<span class="nc bnc" id="L83" title="All 2 branches missed.">        val user = repository.findByEmail(email)</span>
+<span class="nc" id="L84">            ?: throw NoSuchElementException(&quot;NÃ£o encontramos uma conta com esse e-mail.&quot;)</span>
+
+<span class="nc bnc" id="L86" title="All 2 branches missed.">        if (!user.isActive) {</span>
+<span class="nc" id="L87">            throw IllegalAccessException(&quot;Sua conta estÃ¡ desativada. Entre em contato com o administrador.&quot;)</span>
+        }
+
+<span class="nc bnc" id="L90" title="All 2 branches missed.">        if (!passwordEncoder.matches(password, user.password)) {</span>
+<span class="nc" id="L91">            throw IllegalArgumentException(&quot;Senha invÃ¡lida. Verifique e tente novamente.&quot;)</span>
+        }
+
+<span class="nc" id="L94">        println(&quot;BACKEND_LOGIN -&gt; Lendo do Firebase, o Role do usuÃ¡rio Ã©: '${user.role}'&quot;)</span>
+
+<span class="nc" id="L96">        return LoginResponse(</span>
+<span class="nc" id="L97">            message = &quot;Login realizado com sucesso.&quot;,</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">            userId = user.id.orEmpty(),</span>
+<span class="nc" id="L99">            name = user.name,</span>
+<span class="nc" id="L100">            email = user.email,</span>
+<span class="nc" id="L101">            role = user.role,</span>
+<span class="nc" id="L102">            apartmentId = user.apartmentId,</span>
+<span class="nc" id="L103">            block = user.block</span>
+        )
+    }
+
+<span class="nc" id="L107">    private fun validateUser(user: User, isUpdate: Boolean = false) {</span>
+<span class="nc bnc" id="L108" title="All 2 branches missed.">        if (user.name.isBlank()) throw IllegalArgumentException(&quot;O nome Ã© obrigatÃ³rio.&quot;)</span>
+<span class="nc bnc" id="L109" title="All 2 branches missed.">        if (user.email.isBlank()) throw IllegalArgumentException(&quot;O e-mail Ã© obrigatÃ³rio.&quot;)</span>
+<span class="nc bnc" id="L110" title="All 2 branches missed.">        if (!user.email.contains(&quot;@&quot;)) throw IllegalArgumentException(&quot;Insira um e-mail vÃ¡lido.&quot;)</span>
+<span class="nc bnc" id="L111" title="All 4 branches missed.">        if (!isUpdate &amp;&amp; user.password.isBlank()) throw IllegalArgumentException(&quot;A senha Ã© obrigatÃ³ria.&quot;)</span>
+<span class="nc bnc" id="L112" title="All 4 branches missed.">        if (!isUpdate &amp;&amp; user.password.length &lt; 6) throw IllegalArgumentException(&quot;A senha deve ter pelo menos 6 caracteres.&quot;)</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">        if (user.cpf.isBlank()) throw IllegalArgumentException(&quot;O CPF Ã© obrigatÃ³rio.&quot;)</span>
+<span class="nc" id="L114">    }</span>
+
+    private fun hash(value: String): String {
+<span class="nc bnc" id="L117" title="All 2 branches missed.">        return requireNotNull(passwordEncoder.encode(value))</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

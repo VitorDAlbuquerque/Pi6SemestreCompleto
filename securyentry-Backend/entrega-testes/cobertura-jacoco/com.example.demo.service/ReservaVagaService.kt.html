@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ReservaVagaService.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">demo</a> &gt; <a href="index.source.html" class="el_package">com.example.demo.service</a> &gt; <span class="el_source">ReservaVagaService.kt</span></div><h1>ReservaVagaService.kt</h1><pre class="source lang-java linenums">package com.example.demo.service
+
+import com.example.demo.model.ReservaVaga
+import com.example.demo.repository.ApartmentRepository
+import com.example.demo.repository.ReservaVagaRepository
+import org.springframework.stereotype.Service
+
+<span class="nc" id="L8">@Service</span>
+<span class="nc" id="L9">class ReservaVagaService(</span>
+<span class="nc" id="L10">    private val repository: ReservaVagaRepository,</span>
+<span class="nc" id="L11">    private val apartmentRepository: ApartmentRepository</span>
+) {
+
+    fun create(reserva: ReservaVaga): String {
+<span class="nc" id="L15">        normalize(reserva)</span>
+<span class="nc" id="L16">        validate(reserva)</span>
+<span class="nc" id="L17">        return repository.save(reserva)</span>
+    }
+
+<span class="nc" id="L20">    fun getAll(apartmentId: String? = null): List&lt;ReservaVaga&gt; {</span>
+<span class="nc bnc" id="L21" title="All 6 branches missed.">        return if (!apartmentId.isNullOrBlank()) {</span>
+<span class="nc" id="L22">            repository.findAllByApartmentId(apartmentId)</span>
+        } else {
+<span class="nc" id="L24">            repository.findAll()</span>
+        }
+    }
+
+    fun getById(id: String) =
+<span class="nc bnc" id="L29" title="All 2 branches missed.">        repository.findById(id) ?: throw NoSuchElementException(&quot;Reserva de vaga nao encontrada.&quot;)</span>
+
+    fun update(id: String, reserva: ReservaVaga) {
+<span class="nc bnc" id="L32" title="All 2 branches missed.">        repository.findById(id) ?: throw NoSuchElementException(&quot;Reserva de vaga nao encontrada.&quot;)</span>
+<span class="nc" id="L33">        normalize(reserva)</span>
+<span class="nc" id="L34">        validate(reserva)</span>
+<span class="nc" id="L35">        repository.update(id, reserva)</span>
+<span class="nc" id="L36">    }</span>
+
+    fun delete(id: String) {
+<span class="nc bnc" id="L39" title="All 2 branches missed.">        repository.findById(id) ?: throw NoSuchElementException(&quot;Reserva de vaga nao encontrada.&quot;)</span>
+<span class="nc" id="L40">        repository.delete(id)</span>
+<span class="nc" id="L41">    }</span>
+
+    private fun validate(r: ReservaVaga) {
+<span class="nc bnc" id="L44" title="All 2 branches missed.">        if (r.residentName.isBlank()) {</span>
+<span class="nc" id="L45">            throw IllegalArgumentException(&quot;Nome do morador e obrigatorio.&quot;)</span>
+        }
+<span class="nc bnc" id="L47" title="All 2 branches missed.">        if (r.spotNumber.isBlank()) {</span>
+<span class="nc" id="L48">            throw IllegalArgumentException(&quot;Numero da vaga e obrigatorio.&quot;)</span>
+        }
+<span class="nc bnc" id="L50" title="All 2 branches missed.">        if (r.startDateTime.isBlank()) {</span>
+<span class="nc" id="L51">            throw IllegalArgumentException(&quot;Inicio da reserva e obrigatorio.&quot;)</span>
+        }
+<span class="nc bnc" id="L53" title="All 2 branches missed.">        if (r.endDateTime.isBlank()) {</span>
+<span class="nc" id="L54">            throw IllegalArgumentException(&quot;Fim da reserva e obrigatorio.&quot;)</span>
+        }
+<span class="nc bnc" id="L56" title="All 2 branches missed.">        if (r.status.isBlank()) {</span>
+<span class="nc" id="L57">            throw IllegalArgumentException(&quot;Status da reserva e obrigatorio.&quot;)</span>
+        }
+<span class="nc bnc" id="L59" title="All 4 branches missed.">        if (r.apartmentId.isNotBlank()) {</span>
+<span class="nc bnc" id="L60" title="All 2 branches missed.">            apartmentRepository.findById(r.apartmentId)</span>
+<span class="nc" id="L61">                ?: throw IllegalArgumentException(&quot;Apartamento informado nao foi encontrado.&quot;)</span>
+        }
+<span class="nc" id="L63">    }</span>
+
+    private fun normalize(r: ReservaVaga) {
+<span class="nc" id="L66">        r.apartmentId = r.apartmentId.trim()</span>
+<span class="nc" id="L67">        r.residentName = r.residentName.trim()</span>
+<span class="nc" id="L68">        r.spotNumber = r.spotNumber.trim()</span>
+<span class="nc" id="L69">        r.vehiclePlate = r.vehiclePlate.trim().uppercase()</span>
+<span class="nc" id="L70">        r.startDateTime = r.startDateTime.trim()</span>
+<span class="nc" id="L71">        r.endDateTime = r.endDateTime.trim()</span>
+<span class="nc bnc" id="L72" title="All 2 branches missed.">        r.status = r.status.trim().uppercase().ifBlank { &quot;PENDENTE&quot; }</span>
+<span class="nc" id="L73">        r.notes = r.notes.trim()</span>
+<span class="nc" id="L74">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

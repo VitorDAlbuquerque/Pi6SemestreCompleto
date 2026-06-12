@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LprService.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">demo</a> &gt; <a href="index.source.html" class="el_package">com.example.demo.service</a> &gt; <span class="el_source">LprService.kt</span></div><h1>LprService.kt</h1><pre class="source lang-java linenums">package com.example.demo.service
+
+import com.example.demo.dto.LprResult
+import com.example.demo.model.RegistroAcesso
+import com.example.demo.repository.PrestadorRepository
+import com.example.demo.repository.RegistroAcessoRepository
+import com.example.demo.repository.UserRepository
+import com.example.demo.repository.VehicleRepository
+import org.springframework.stereotype.Service
+import java.time.Clock
+import java.time.LocalDateTime
+import java.time.LocalTime
+
+/**
+ * ServiÃ§o central de controle de acesso do portÃ£o.
+ *
+ * Regras de negÃ³cio implementadas:
+ *   RN01 â€” Placa deve estar cadastrada e ativa no sistema.
+ *   RN02 â€” Prestadores de serviÃ§o sÃ³ podem acessar dentro da janela de horÃ¡rio configurada.
+ *   RN03 â€” O status do usuÃ¡rio/veÃ­culo deve ser SAIU (sem entrada ativa) para permitir nova entrada.
+ *
+ * Casos de uso cobertos:
+ *   CT01 â€” Entrada automÃ¡tica via LPR (placa reconhecida, status SAIU).
+ *   CT02 â€” LiberaÃ§Ã£o manual pelo porteiro quando veÃ­culo nÃ£o estÃ¡ cadastrado mas usuÃ¡rio estÃ¡.
+ *   CT03 â€” Acesso negado: placa invÃ¡lida ou horÃ¡rio fora da janela permitida.
+ *   CT04 â€” Entrada duplicada bloqueada (veÃ­culo ainda com status ENTROU).
+ *   CT05 â€” MÃ³dulo LPR offline; porteiro libera manualmente pelo cadastro do veÃ­culo.
+ *   CT06 â€” Prestador no exato limite inicial do horÃ¡rio (inclusivo).
+ *   CT07 â€” Prestador apÃ³s o limite final do horÃ¡rio (exclusivo).
+ */
+<span class="fc" id="L31">@Service</span>
+<span class="fc" id="L32">class LprService(</span>
+<span class="fc" id="L33">    private val vehicleRepository: VehicleRepository,</span>
+<span class="fc" id="L34">    private val registroAcessoService: RegistroAcessoService,</span>
+<span class="fc" id="L35">    private val registroAcessoRepository: RegistroAcessoRepository,</span>
+<span class="fc" id="L36">    private val prestadorRepository: PrestadorRepository,</span>
+<span class="fc" id="L37">    private val userRepository: UserRepository,</span>
+<span class="fc" id="L38">    private val servoService: ServoService,</span>
+<span class="fc" id="L39">    private val lprScannerClient: LprScannerClient,</span>
+<span class="fc" id="L40">    private val clock: Clock = Clock.systemDefaultZone()</span>
+<span class="fc" id="L41">) {</span>
+
+    // -------------------------------------------------------------------------
+    // Ponto de entrada: leitura automÃ¡tica de placa via cÃ¢mera (LPR)
+    // -------------------------------------------------------------------------
+
+    fun triggerScan(): LprResult {
+<span class="fc bfc" id="L48" title="All 2 branches covered.">        val lprResponse = lprScannerClient.scan()</span>
+<span class="fc" id="L49">            ?: return LprResult(</span>
+<span class="fc" id="L50">                plate = null,</span>
+<span class="fc" id="L51">                status = &quot;lpr_offline&quot;,</span>
+<span class="fc" id="L52">                residentName = null,</span>
+<span class="fc" id="L53">                apartment = null,</span>
+<span class="fc" id="L54">                message = &quot;MÃ³dulo LPR indisponÃ­vel. Porteiro pode liberar manualmente.&quot;</span>
+            )
+
+<span class="pc bpc" id="L57" title="1 of 2 branches missed.">        val plate = lprResponse[&quot;plate&quot;] as? String</span>
+<span class="pc bpc" id="L58" title="2 of 4 branches missed.">        val lprStatus = lprResponse[&quot;status&quot;] as? String ?: &quot;no_plate&quot;</span>
+
+<span class="pc bpc" id="L60" title="4 of 8 branches missed.">        if (plate.isNullOrBlank() || lprStatus == &quot;no_plate&quot;) {</span>
+<span class="nc" id="L61">            return LprResult(</span>
+<span class="nc" id="L62">                plate = null,</span>
+<span class="nc" id="L63">                status = &quot;no_plate&quot;,</span>
+<span class="nc" id="L64">                residentName = null,</span>
+<span class="nc" id="L65">                apartment = null,</span>
+<span class="nc" id="L66">                message = &quot;Nenhuma placa detectada pela cÃ¢mera.&quot;</span>
+            )
+        }
+
+<span class="fc" id="L70">        return evaluateAccess(plate, manual = false)</span>
+    }
+
+    // -------------------------------------------------------------------------
+    // LiberaÃ§Ã£o manual pelo porteiro â€” CT05: veÃ­culo cadastrado, LPR offline
+    // -------------------------------------------------------------------------
+
+    fun liberarEntradaManual(plate: String): LprResult =
+<span class="fc" id="L78">        evaluateAccess(plate, manual = true)</span>
+
+    // -------------------------------------------------------------------------
+    // LiberaÃ§Ã£o manual pelo porteiro â€” CT02: veÃ­culo NÃƒO cadastrado, usuÃ¡rio sim
+    // O porteiro localiza o morador/visitante pelo cadastro e confirma a entrada.
+    // -------------------------------------------------------------------------
+
+    fun liberarEntradaManualPorUsuario(userId: String, plate: String?): LprResult {
+<span class="fc" id="L86">        val now = LocalDateTime.now(clock).toString()</span>
+
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">        val user = userRepository.findById(userId)</span>
+<span class="nc" id="L89">            ?: return LprResult(</span>
+<span class="nc" id="L90">                plate = plate,</span>
+<span class="nc" id="L91">                status = &quot;denied&quot;,</span>
+<span class="nc" id="L92">                residentName = null,</span>
+<span class="nc" id="L93">                apartment = null,</span>
+<span class="nc" id="L94">                message = &quot;UsuÃ¡rio nÃ£o encontrado. Acesso negado.&quot;</span>
+            )
+
+        // RN03 â€” verifica status (ENTROU/SAIU) mesmo na liberaÃ§Ã£o manual
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">        val lastAccess = plate?.let { registroAcessoRepository.findLastByPlate(it) }</span>
+<span class="pc bpc" id="L99" title="5 of 6 branches missed.">        if (lastAccess != null &amp;&amp; lastAccess.tipoEvento == &quot;ENTRADA&quot; &amp;&amp; lastAccess.status == &quot;AUTORIZADO&quot;) {</span>
+<span class="nc" id="L100">            registroAcessoService.create(</span>
+<span class="nc" id="L101">                RegistroAcesso(</span>
+<span class="nc" id="L102">                    tipoEvento = &quot;TENTATIVA&quot;,</span>
+<span class="nc" id="L103">                    pessoaNome = user.name,</span>
+<span class="nc" id="L104">                    pessoaTipo = user.role,</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">                    veiculoPlaca = plate ?: &quot;&quot;,</span>
+<span class="nc" id="L106">                    dataHora = now,</span>
+<span class="nc" id="L107">                    status = &quot;NEGADO&quot;,</span>
+<span class="nc" id="L108">                    observacao = &quot;Tentativa de entrada duplicada via liberaÃ§Ã£o manual&quot;</span>
+                )
+            )
+<span class="nc" id="L111">            return LprResult(</span>
+<span class="nc" id="L112">                plate = plate,</span>
+<span class="nc" id="L113">                status = &quot;duplicate_entry&quot;,</span>
+<span class="nc" id="L114">                residentName = user.name,</span>
+<span class="nc" id="L115">                apartment = null,</span>
+<span class="nc" id="L116">                message = &quot;Acesso negado. UsuÃ¡rio ${user.name} jÃ¡ possui entrada ativa.&quot;</span>
+            )
+        }
+
+<span class="fc" id="L120">        registroAcessoService.create(</span>
+<span class="fc" id="L121">            RegistroAcesso(</span>
+<span class="fc" id="L122">                tipoEvento = &quot;ENTRADA&quot;,</span>
+<span class="fc" id="L123">                pessoaNome = user.name,</span>
+<span class="fc" id="L124">                pessoaTipo = user.role,</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">                veiculoPlaca = plate ?: &quot;&quot;,</span>
+<span class="fc" id="L126">                dataHora = now,</span>
+<span class="fc" id="L127">                status = &quot;AUTORIZADO&quot;,</span>
+<span class="fc" id="L128">                observacao = &quot;Acesso manual via porteiro - veÃ­culo nÃ£o cadastrado&quot;</span>
+            )
+        )
+<span class="fc" id="L131">        servoService.abrirPortao()</span>
+<span class="fc" id="L132">        return LprResult(</span>
+<span class="fc" id="L133">            plate = plate,</span>
+<span class="fc" id="L134">            status = &quot;gate_opened&quot;,</span>
+<span class="fc" id="L135">            residentName = user.name,</span>
+<span class="fc" id="L136">            apartment = user.apartmentId,</span>
+<span class="fc" id="L137">            message = &quot;PortÃ£o aberto! Acesso manual autorizado para ${user.name}.&quot;</span>
+        )
+    }
+
+    // -------------------------------------------------------------------------
+    // NÃºcleo de avaliaÃ§Ã£o de acesso â€” aplica RN01, RN02 e RN03 em sequÃªncia
+    // -------------------------------------------------------------------------
+
+    private fun evaluateAccess(plate: String, manual: Boolean): LprResult {
+<span class="fc" id="L146">        val now = LocalDateTime.now(clock).toString()</span>
+
+        // RN01 â€” placa deve estar cadastrada e ativa
+<span class="fc" id="L149">        val vehicle = vehicleRepository.findByPlate(plate)</span>
+<span class="pc bpc" id="L150" title="1 of 4 branches missed.">        if (vehicle == null || !vehicle.isActive) {</span>
+<span class="fc" id="L151">            registroAcessoService.create(</span>
+<span class="fc" id="L152">                RegistroAcesso(</span>
+<span class="fc" id="L153">                    tipoEvento = &quot;TENTATIVA&quot;,</span>
+<span class="fc" id="L154">                    pessoaNome = &quot;VeÃ­culo $plate&quot;,</span>
+<span class="fc" id="L155">                    pessoaTipo = &quot;VEICULO&quot;,</span>
+<span class="fc" id="L156">                    veiculoPlaca = plate,</span>
+<span class="fc" id="L157">                    dataHora = now,</span>
+<span class="fc" id="L158">                    status = &quot;NEGADO&quot;,</span>
+<span class="fc" id="L159">                    observacao = &quot;Placa nÃ£o cadastrada no sistema&quot;</span>
+                )
+            )
+<span class="fc" id="L162">            return LprResult(</span>
+<span class="fc" id="L163">                plate = plate,</span>
+<span class="fc" id="L164">                status = &quot;denied&quot;,</span>
+<span class="fc" id="L165">                residentName = null,</span>
+<span class="fc" id="L166">                apartment = null,</span>
+<span class="fc" id="L167">                message = &quot;Acesso negado. Placa $plate nÃ£o estÃ¡ cadastrada no sistema.&quot;</span>
+            )
+        }
+
+        // RN02 â€” para prestadores, valida janela de horÃ¡rio (CT06 / CT07)
+<span class="fc bfc" id="L172" title="All 4 branches covered.">        if (vehicle.prestadorId.isNotBlank()) {</span>
+<span class="fc" id="L173">            val prestador = prestadorRepository.findById(vehicle.prestadorId)</span>
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">            if (prestador != null) {</span>
+<span class="fc" id="L175">                val currentTime = LocalTime.now(clock)</span>
+<span class="fc" id="L176">                val startTime = LocalTime.parse(prestador.allowedStartTime)</span>
+<span class="fc" id="L177">                val endTime = LocalTime.parse(prestador.allowedEndTime)</span>
+                // CT06: limite inferior Ã© INCLUSIVO (currentTime == startTime â†’ permitido)
+                // CT07: limite superior Ã© EXCLUSIVO (currentTime apÃ³s endTime â†’ negado)
+<span class="pc bpc" id="L180" title="1 of 4 branches missed.">                if (currentTime.isBefore(startTime) || currentTime.isAfter(endTime)) {</span>
+<span class="fc" id="L181">                    registroAcessoService.create(</span>
+<span class="fc" id="L182">                        RegistroAcesso(</span>
+<span class="fc" id="L183">                            tipoEvento = &quot;TENTATIVA&quot;,</span>
+<span class="fc" id="L184">                            pessoaNome = prestador.employeeName,</span>
+<span class="fc" id="L185">                            pessoaTipo = &quot;PRESTADOR&quot;,</span>
+<span class="fc" id="L186">                            veiculoPlaca = plate,</span>
+<span class="fc" id="L187">                            dataHora = now,</span>
+<span class="fc" id="L188">                            status = &quot;NEGADO&quot;,</span>
+<span class="fc" id="L189">                            observacao = &quot;Acesso negado por horÃ¡rio: fora da janela ${prestador.allowedStartTime}-${prestador.allowedEndTime}&quot;</span>
+                        )
+                    )
+<span class="fc" id="L192">                    return LprResult(</span>
+<span class="fc" id="L193">                        plate = plate,</span>
+<span class="fc" id="L194">                        status = &quot;denied_by_time&quot;,</span>
+<span class="fc" id="L195">                        residentName = null,</span>
+<span class="fc" id="L196">                        apartment = null,</span>
+<span class="fc" id="L197">                        message = &quot;Acesso negado. HorÃ¡rio fora da janela permitida (${prestador.allowedStartTime}-${prestador.allowedEndTime}).&quot;</span>
+                    )
+                }
+            }
+        }
+
+        // RN03 â€” status deve ser SAIU; bloqueia entrada duplicada (CT04)
+<span class="fc" id="L204">        val lastAccess = registroAcessoRepository.findLastByPlate(plate)</span>
+<span class="pc bpc" id="L205" title="2 of 6 branches missed.">        if (lastAccess != null &amp;&amp; lastAccess.tipoEvento == &quot;ENTRADA&quot; &amp;&amp; lastAccess.status == &quot;AUTORIZADO&quot;) {</span>
+<span class="fc" id="L206">            registroAcessoService.create(</span>
+<span class="fc" id="L207">                RegistroAcesso(</span>
+<span class="fc" id="L208">                    tipoEvento = &quot;TENTATIVA&quot;,</span>
+<span class="fc" id="L209">                    pessoaNome = &quot;VeÃ­culo $plate&quot;,</span>
+<span class="fc" id="L210">                    pessoaTipo = &quot;VEICULO&quot;,</span>
+<span class="fc" id="L211">                    veiculoPlaca = plate,</span>
+<span class="fc" id="L212">                    dataHora = now,</span>
+<span class="fc" id="L213">                    status = &quot;NEGADO&quot;,</span>
+<span class="fc" id="L214">                    observacao = &quot;Tentativa de entrada duplicada: veÃ­culo jÃ¡ registrado como ENTROU&quot;</span>
+                )
+            )
+<span class="fc" id="L217">            return LprResult(</span>
+<span class="fc" id="L218">                plate = plate,</span>
+<span class="fc" id="L219">                status = &quot;duplicate_entry&quot;,</span>
+<span class="fc" id="L220">                residentName = null,</span>
+<span class="fc" id="L221">                apartment = null,</span>
+<span class="fc" id="L222">                message = &quot;Acesso negado. VeÃ­culo $plate jÃ¡ possui entrada ativa sem saÃ­da registrada.&quot;</span>
+            )
+        }
+
+        // Todas as regras passaram â†’ abre portÃ£o e registra AUTORIZADO
+<span class="fc bfc" id="L227" title="All 2 branches covered.">        val observacao = if (manual) &quot;Acesso manual via porteiro&quot; else &quot;Acesso automÃ¡tico via LPR&quot;</span>
+<span class="fc" id="L228">        registroAcessoService.create(</span>
+<span class="fc" id="L229">            RegistroAcesso(</span>
+<span class="fc" id="L230">                tipoEvento = &quot;ENTRADA&quot;,</span>
+<span class="fc" id="L231">                pessoaNome = &quot;VeÃ­culo $plate&quot;,</span>
+<span class="fc" id="L232">                pessoaTipo = &quot;VEICULO&quot;,</span>
+<span class="fc" id="L233">                veiculoPlaca = plate,</span>
+<span class="fc" id="L234">                dataHora = now,</span>
+<span class="fc" id="L235">                status = &quot;AUTORIZADO&quot;,</span>
+<span class="fc" id="L236">                observacao = observacao</span>
+            )
+        )
+<span class="fc" id="L239">        servoService.abrirPortao()</span>
+<span class="fc" id="L240">        return LprResult(</span>
+<span class="fc" id="L241">            plate = plate,</span>
+<span class="fc" id="L242">            status = &quot;gate_opened&quot;,</span>
+<span class="fc" id="L243">            residentName = null,</span>
+<span class="fc" id="L244">            apartment = vehicle.apartmentId,</span>
+<span class="fc" id="L245">            message = &quot;PortÃ£o aberto! Placa $plate autorizada.&quot;</span>
+        )
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

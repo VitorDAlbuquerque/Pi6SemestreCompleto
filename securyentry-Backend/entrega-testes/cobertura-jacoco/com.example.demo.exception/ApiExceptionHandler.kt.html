@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ApiExceptionHandler.kt</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">demo</a> &gt; <a href="index.source.html" class="el_package">com.example.demo.exception</a> &gt; <span class="el_source">ApiExceptionHandler.kt</span></div><h1>ApiExceptionHandler.kt</h1><pre class="source lang-java linenums">package com.example.demo.exception
+
+import com.example.demo.dto.ErrorResponse
+import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.ExceptionHandler
+import org.springframework.web.bind.annotation.RestControllerAdvice
+
+<span class="nc" id="L9">@RestControllerAdvice</span>
+class ApiExceptionHandler {
+
+    @ExceptionHandler(IllegalArgumentException::class)
+    fun handleBadRequest(ex: IllegalArgumentException): ResponseEntity&lt;ErrorResponse&gt; =
+<span class="nc bnc" id="L14" title="All 2 branches missed.">        ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse(ex.message ?: &quot;Dados invalidos.&quot;))</span>
+
+    @ExceptionHandler(NoSuchElementException::class)
+    fun handleNotFound(ex: NoSuchElementException): ResponseEntity&lt;ErrorResponse&gt; =
+<span class="nc bnc" id="L18" title="All 2 branches missed.">        ResponseEntity.status(HttpStatus.NOT_FOUND).body(ErrorResponse(ex.message ?: &quot;Recurso nao encontrado.&quot;))</span>
+
+    @ExceptionHandler(IllegalAccessException::class)
+    fun handleForbidden(ex: IllegalAccessException): ResponseEntity&lt;ErrorResponse&gt; =
+<span class="nc bnc" id="L22" title="All 2 branches missed.">        ResponseEntity.status(HttpStatus.FORBIDDEN).body(ErrorResponse(ex.message ?: &quot;Acesso negado.&quot;))</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

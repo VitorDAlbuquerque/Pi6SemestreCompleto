@@ -42,6 +42,29 @@ kotlin {
 tasks.withType<Test> {
 	useJUnitPlatform()
 	finalizedBy(tasks.jacocoTestReport)
+	testLogging {
+		events("passed", "failed", "skipped")
+		showExceptions = true
+		showCauses = true
+		addTestListener(object : TestListener {
+			override fun beforeSuite(suite: TestDescriptor) {}
+			override fun beforeTest(testDescriptor: TestDescriptor) {}
+			override fun afterTest(testDescriptor: TestDescriptor, result: TestResult) {}
+			override fun afterSuite(suite: TestDescriptor, result: TestResult) {
+				if (suite.parent == null) {
+					println("\n========================================")
+					println("Resultado dos testes")
+					println("========================================")
+					println("Total  : ${result.testCount}")
+					println("Passou : ${result.successfulTestCount}")
+					println("Falhou : ${result.failedTestCount}")
+					println("Pulado : ${result.skippedTestCount}")
+					println("Status : ${result.resultType}")
+					println("========================================\n")
+				}
+			}
+		})
+	}
 }
 
 tasks.jacocoTestReport {
